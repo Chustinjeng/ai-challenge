@@ -1,6 +1,7 @@
 import streamlit as st
 from streamlit_chat import message
 import google.generativeai as palm
+import time
 
 palm_api_key = "AIzaSyDJpbtLGiTjYhE9pLIfkh1bQjEQWoFgIG8"
 st.title("PaLM Tutorial")
@@ -21,7 +22,7 @@ with st.form("chat_input", clear_on_submit=True):
 
 
 for msg in st.session_state.messages:
-    message(msg["content"], is_user=msg["role"] == "user")  # display message on the screen
+    message(msg["content"], is_user=msg["role"] == "user", key=time.time())  # display message on the screen
 
 if user_prompt and palm_api_key:
 
@@ -29,7 +30,7 @@ if user_prompt and palm_api_key:
 
     st.session_state.messages.append({"role": "user", "content": user_prompt})
     
-    message(user_prompt, is_user=True)
+    message(user_prompt, is_user=True, key=time.time())
 
     response = palm.generate_text(model='models/text-bison-001', prompt=user_prompt, temperature=0.1)  # get response from Google's PaLM API
     print(response)
@@ -38,7 +39,7 @@ if user_prompt and palm_api_key:
 
     st.session_state.messages.append(msg)  # add message to the chat history
 
-    message(msg["content"])  # display message on the screen
+    message(msg["content"], key=time.time())  # display message on the screen
 
 
 def clear_chat():
