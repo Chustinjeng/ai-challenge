@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+ 
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="description" content="">
+	<meta name="author" content="">
+
+	 <title>Chroma Playground</title>
+
+	<link href="static/css/main.css" rel="stylesheet">
+    <link href="static/css/pivot.css" rel="stylesheet">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script> 
+	<script src="static/js/main.js"></script>
+     
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pivottable/2.23.0/pivot.min.js"></script>
+
+
+</head>
+ 
+<body>
+
+<div id="code">
+  <div class="tab-container"> 
+    <div class="tab" class="buttons-container">
+        <button class="tablinks" onclick="openTab(event, 'tab-table')">Table</button>
+        <button class="tablinks" onclick="openTab(event, 'tab-accordion')">Code Chunks</button>
+    </div>
+
+    <!-- Tab content -->
+    <div id="tab-table" class="tabcontent">
+        <h3>Vector Search Log</h3>
+        <div id="raw_table" class="raw_table_class"></div>
+        <div id="my_dataviz"></div>
+        
+    </div>
+
+    <!-- Tab content -->
+    <div id="tab-accordion" class="tabcontent">
+        <h3>Code Chunks</h3>
+        <details>
+          <summary>Section title</summary>
+          <p>Here is the content!</p>
+        </details>
+    </div>
+  </div>
+
+</div>    
+   
+    <!-- Chat function -->
+
+<div id="chat" class="chat-container">
+    
+    <section class="msger">
+  <header class="msger-header">
+    <div class="msger-header-title">
+      <i class="fas fa-comment-alt"></i> Your Code Assistant
+    </div>
+    <div class="msger-header-options">
+      <span><i class="fas fa-cog"></i></span>
+    </div>
+  </header>
+
+  <main class="msger-chat">
+    <div class="msg left-msg">
+      <div
+       class="msg-img"
+      ></div>
+
+      <div class="msg-bubble">
+        <div class="msg-info">
+          <div class="msg-info-name">CodeBOT</div>
+        </div>
+
+        <div class="msg-text">
+          Go ahead and ask a question about our company's code base!
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <form class="msger-inputarea" id="queryForm">
+    <div>
+            <text style="color:grey;">Collection name</text>
+        <select id="inputCollection" name="collection-name"></select>
+            <text style="color:grey;">Answer type</text>
+        <select id="inputChunkType" name="chunk-type" class=inputChunkType>
+          <option>No selection</option>
+          <option>Function declaration</option>
+          <option>Class declaration</option>
+          <option>Variable definition</option>
+          <option>Namespace definition</option>
+          <option>CSS</option>
+          <option>HTML style section</option>
+          <option>PHP section</option>
+          
+        </select>
+    </div>
+    <div>
+        <input id="inputQuery" type="text" name="query" class="msger-input" placeholder="Ask a question..." size="90" required autofocus>
+        <button type="submit" class="msger-send-btn">Ask</button>
+    </div>
+  </form>
+</section>
+
+
+
+</div>
+    
+</body>
+ 
+</html>

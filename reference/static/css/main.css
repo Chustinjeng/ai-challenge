@@ -1,0 +1,354 @@
+html {
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  font: 14px helvetica neue, helvetica, arial, sans-serif;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+div#code{
+    width: 49%;    
+}
+
+#cy {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  right: 17em;
+}
+
+.chat-container {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  background: rgba(0, 0, 0, 0.666);
+  box-sizing: border-box;
+  padding: 1em;
+  color: #fff;
+  transition-property: opacity;
+  transition-duration: 250ms;
+  transition-timing-function: ease-out;
+  overflow: auto;
+  z-index: 1;
+}
+
+.param {
+  margin-bottom: 1em;
+}
+
+.preamble {
+  margin-bottom: 2em;
+}
+
+p {
+  margin: 0.5em 0;
+  font-size: 0.8em;
+}
+
+.param button {
+  width: 3em;
+  margin-right: 0.25em;
+  text-align: center;
+}
+
+a,
+a:hover {
+  color: #8BB0D0;
+}
+
+.label {
+  display: block;
+}
+
+.slider {
+  display: block;
+  width: 100%;
+  margin: 0;
+}
+
+.config-toggle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  padding: 1em;
+  margin: 0.2em;
+  cursor: pointer;
+  color: #fff;
+  z-index: 9999999;
+}
+
+.config-closed .config {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.config-closed #cy {
+  right: 0;
+}
+
+.tip-link {
+  display: block;
+}
+
+@media (max-width: 600px){
+  #cy {
+    right: 0;
+  }
+}
+
+
+/* Style the tab */
+
+.tab-container {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+
+}
+
+.buttons-container {
+    border: 1px solid #ccc;
+    padding: 10px;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+}
+
+.tablinks {
+    background-color: #f2f2f2;
+    border: 1px solid #ccc; /* Add a border around each button */
+    padding: 10px; /* Add padding for better appearance */
+    cursor: pointer;
+}
+
+.tab {
+  overflow: hidden;
+  border-bottom: 1px solid #ccc;
+}
+
+/* Style the buttons that are used to open the tab content */
+.tab button {
+  background-color: inherit;
+  float: left;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  padding: 14px 16px;
+  transition: 0.3s;
+  border: 1px solid #e9e9e9;
+  border-radius: 2px;
+}
+
+/* Change background color of buttons on hover */
+.tab button:hover {
+  background-color: #ddd;
+}
+
+/* Create an active/current tablink class */
+.tab button.active {
+  background-color: #ccc;
+}
+
+/* Style the tab content */
+.tabcontent {
+  display: none;
+  padding: 6px 12px;
+  border: 0px solid #ccc;
+  border-top: none;
+  max-height: 700px; 
+  margin: 10px;
+  overflow-y: auto;
+}
+
+.raw_table_class table {
+    border-collapse: collapse;
+    margin: 25px 0;
+    font-size: 0.9em;
+    font-family: sans-serif;
+    min-width: 400px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+}
+.raw_table_class th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+.raw_table_class th {
+    background-color: #f2f2f2;
+}
+
+.raw_table_class tr:hover {
+    background-color: #f5f5f5;
+}
+
+.wider-column {
+    min-width: 200px; /* Adjust the width as needed */
+}
+
+/* chat box  */
+
+:root {
+  --body-bg: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  --msger-bg: rgba(64, 64, 64, 0.8);
+  --border: 2px solid #ddd;
+  --left-msg-bg: #5A5A5A;
+  --right-msg-bg: #579ffb;
+}
+
+html {
+  box-sizing: border-box;
+}
+
+*,
+*:before,
+*:after {
+  margin: 0;
+  padding: 0;
+  box-sizing: inherit;
+}
+
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-image: var(--body-bg);
+  font-family: Helvetica, sans-serif;
+}
+
+.msger {
+  display: flex;
+  flex-flow: column wrap;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 867px;
+  margin: 25px 10px;
+  height: calc(100% - 50px);
+  border: var(--border);
+  border-radius: 5px;
+  background: var(--msger-bg);
+  box-shadow: 0 15px 15px -5px rgba(0, 0, 0, 0.2);
+}
+
+.msger-header {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+  border-bottom: var(--border);
+  background: #eee;
+  color: #666;
+}
+
+.msger-chat {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+}
+.msger-chat::-webkit-scrollbar {
+  width: 6px;
+}
+.msger-chat::-webkit-scrollbar-track {
+  background: #ddd;
+}
+.msger-chat::-webkit-scrollbar-thumb {
+  background: #bdbdbd;
+}
+.msg {
+  display: flex;
+  align-items: flex-end;
+  margin-bottom: 10px;
+}
+.msg:last-of-type {
+  margin: 0;
+}
+.msg-img {
+  width: 50px;
+  height: 50px;
+  margin-right: 10px;
+  background: #ddd;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  border-radius: 50%;
+}
+.msg-bubble {
+  max-width: 450px;
+  padding: 20px;
+  border-radius: 15px;
+  background: var(--left-msg-bg);
+}
+.msg-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.msg-info-name {
+  margin-right: 10px;
+  font-weight: bold;
+}
+
+.left-msg .msg-bubble {
+  border-bottom-left-radius: 0;
+}
+
+.right-msg {
+  flex-direction: row-reverse;
+}
+.right-msg .msg-bubble {
+  background: var(--right-msg-bg);
+  color: #fff;
+  border-bottom-right-radius: 0;
+}
+.right-msg .msg-img {
+  margin: 0 0 0 10px;
+}
+
+.msger-inputarea {
+  display: grid;
+  padding: 10px;
+  border-top: var(--border);
+  background: #eee;
+}
+.msger-inputarea * {
+  padding: 10px;
+  border: none;
+  border-radius: 3px;
+  font-size: 1em;
+}
+.msger-inputarea .inputCollection {
+  margin: 10px;
+  padding: 10px;
+}
+
+.msger-input {
+  flex: 1;
+  background: #ddd;
+}
+.msger-send-btn {
+  margin-left: 10px;
+  background: #555;
+  color: #fff;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.23s;
+}
+.msger-send-btn:hover {
+  background: #444;
+}
+
+.msger-chat {
+  background-color: #fcfcfe;
+}
+
+
