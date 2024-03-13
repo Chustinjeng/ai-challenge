@@ -7,11 +7,13 @@ from flask import Flask, render_template, request, json
 from flask_socketio import SocketIO
 import chromadb
 from chromadb.config import Settings
-import chromadb.utils.embedding_functions
+from chromadb.utils import embedding_functions
 from transformers import AutoModelForCausalLM, AutoTokenizer, AutoModel
+# from huggingface_hub import login
+# login()
 
 chroma_client = chromadb.PersistentClient(path="../chromadb")
-
+sentence_transformer_ef = embedding_functions.SentenceTransformerEmbeddingFunction(model_name="all-mpnet-base-v2")
 app = Flask(__name__)
 
 @app.route('/')
@@ -38,7 +40,7 @@ def query():
     print("can get")
     print(query)
     print(collection)
-    chroma_collection = chroma_client.get_collection(name=collection)
+    chroma_collection = chroma_client.get_collection(name=collection, embedding_function=sentence_transformer_ef)
     results = chroma_collection.query(query_texts=[query], n_results=10)
     retrieved_documents = [results['metadatas'], results['documents']]
     # print("METADATA: ", results['metadatas'])
@@ -49,7 +51,9 @@ def synthesize_response():
     query = request.form.getlist('query')[0]
     context = request.form.getlist('documents')[0]
     model_path = "../../codellamachat/text-generation-webui/models/TheBloke_CodeLlama-13B-Instruct-GPTQ-8bit-128g"
-    model = AutoModelForCausalLM.from_pretrained(model_path).cuda()
+    # model_path = "google/gemma-7b"
+
+    model = AutoModelForCausalLM.from_pretrained(model_path)
     tokenizer = AutoTokenizer.from_pretrained(model_path)
     
     prompt = f"{query} [SEP] {context}"
@@ -72,7 +76,7 @@ def synthesize_response():
     {prompt}[/INST]
     '''
     
-    input_ids = tokenizer(prompt_template, return_tensors='pt').input_ids.cuda()
+    input_ids = tokenizer(prompt_template, return_tensors='pt')
     output = model.generate(inputs=input_ids, temperature=0.7, do_sample=True, top_p=0.95, top_k=40, max_new_tokens=512)
     response = tokenizer.decode(output[0])
     clean_response = response.split('[/INST]')[-1]
