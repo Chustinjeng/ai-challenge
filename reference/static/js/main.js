@@ -115,7 +115,7 @@ $(document).ready(function(){
                     const restaurantNames = metadatas.map(x => x.address)
                     // relevantDocuments = documents.join('\n')
                     const relevantDocuments = restaurantNames.join('\n')
-                    const properties = ["name", "address", "halal", "beverage", "soup", "seafood", "healthy", "fast food",  "local", "countries"]
+                    const properties = ["name", "address", "halal", "beverage", "soup", "seafood", "healthy", "fast food",  "local", "countries", "longitude", "latitude"]
 
                     // Update the table 
                     const table = document.createElement("table");
