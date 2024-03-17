@@ -11,3 +11,4 @@ google-generativeai==0.1.0rc1
 streamlit==1.31.1 
 streamlit-chat==0.1.1
 pysqlite3==0.5.2
+bitsandbytes==0.42.0

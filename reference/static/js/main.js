@@ -81,88 +81,200 @@ $(document).ready(function(){
       msgerChat.scrollTop += 500;
     }
     
+    const INVALID_QUERY_RESPONSE = "Please type in a prompt that is related to food!"
+    const ERROR_MESSAGE = "Sorry! An error occurred, please try again!"
+
     function botResponse(query) {
         
       const delay = query.split(" ").length * 100;
         if (query == "") {
             return
         }
-        
-        var collectionText = "main_collection"
-        
-        var dataToDB = {"query" : query, "collection" : collectionText}
+
+        var intermediateQuery = {"query": query}
         $.ajax({
-            url: '/query',
-            data: dataToDB,
-            type: 'POST',
-            success: function(dataArray){
-                metadatas = dataArray[0][0] // array of 10 objects
-                documents = dataArray[1][0] // array of 10 strings\
-                console.log("meta")
-                console.log(metadatas)
-                console.log("documents")
-                console.log(documents)
-                relevantDocuments = documents.join('\n')
-                properties = ["name", "address", "halal", "beverage", "soup", "seafood", "healthy", "fast food",  "local", "countries"]
+          url: '/intermediate_query',
+          data: intermediateQuery,
+          type: 'POST',
+          success: function(response) {
+            console.log(response)
+            var collectionText = "main_collection"
+        
+            var dataToDB = {"query" : response, "collection" : collectionText}
+            $.ajax({
+                url: '/query',
+                data: dataToDB,
+                type: 'POST',
+                success: function(dataArray){
+                    const metadatas = dataArray[0][0] // array of 10 objects
+                    const documents = dataArray[1][0] // array of 10 strings\
+                    console.log("meta")
+                    console.log(metadatas)
+                    console.log("documents")
+                    console.log(documents)
+                    const restaurantNames = metadatas.map(x => x.address)
+                    // relevantDocuments = documents.join('\n')
+                    const relevantDocuments = restaurantNames.join('\n')
+                    const properties = ["name", "address", "halal", "beverage", "soup", "seafood", "healthy", "fast food",  "local", "countries"]
 
-                // Update the table 
-                const table = document.createElement("table");
-                const title = document.createElement("caption");
-                const titleText = document.createTextNode("Query: " + query);
-                title.appendChild(titleText);
-                table.appendChild(title);
-                title.style.fontSize = "15px";
-                title.style.fontWeight = "bold";
-                title.style.textAlign = "left";
-                title.style.color = "#555";
-                title.style.paddingBottom = "10px";
-                
-                const hrow = document.createElement("tr");
-                table.appendChild(hrow);
-                
+                    // Update the table 
+                    const table = document.createElement("table");
+                    const title = document.createElement("caption");
+                    const titleText = document.createTextNode("Query: " + query);
+                    title.appendChild(titleText);
+                    table.appendChild(title);
+                    title.style.fontSize = "15px";
+                    title.style.fontWeight = "bold";
+                    title.style.textAlign = "left";
+                    title.style.color = "#555";
+                    title.style.paddingBottom = "10px";
+                    
+                    const hrow = document.createElement("tr");
+                    table.appendChild(hrow);
+                    
 
-                for(let property of properties)
-                    {
-                        const th = document.createElement("th");
-                        const thtext = document.createTextNode(property);
-                        th.appendChild(thtext);
-                        hrow.appendChild(th);
-                    }
-
-                for(let met of metadatas)
-                    {
-                        const drow = document.createElement("tr");
-                        table.appendChild(drow);
-                
-                        for(let property of properties)
+                    for(let property of properties)
                         {
-                            const td = document.createElement("td");
-                            const tdtext = document.createTextNode(met[property]);
-                            td.appendChild(tdtext);
-                            drow.appendChild(td);
+                            const th = document.createElement("th");
+                            const thtext = document.createTextNode(property);
+                            th.appendChild(thtext);
+                            hrow.appendChild(th);
                         }
-                    }
-                var rawTable = document.getElementById('raw_table')
-                rawTable.insertBefore(table, rawTable.firstChild);
 
-                var dataToLLM = {"query" : query, "documents" : relevantDocuments}
-                $.ajax({
-                    url: '/synthesize-response',
-                    data: dataToLLM, 
-                    type: 'POST',
-                    success: function(response){
-                        console.log(response)
-                        setTimeout(() => {
-                            appendMessage("left", response);
-                          }, delay);
+                    for(let met of metadatas)
+                        {
+                            const drow = document.createElement("tr");
+                            table.appendChild(drow);
+                    
+                            for(let property of properties)
+                            {
+                                const td = document.createElement("td");
+                                const tdtext = document.createTextNode(met[property]);
+                                td.appendChild(tdtext);
+                                drow.appendChild(td);
+                            }
+                        }
+                    var rawTable = document.getElementById('raw_table')
+                    rawTable.insertBefore(table, rawTable.firstChild);
+
+                    var dataToLLM = {"query" : response, "documents" : relevantDocuments}
+                    if (response === INVALID_QUERY_RESPONSE) {
+                      setTimeout(() => {
+                        appendMessage("left", response);
+                      }, delay);
+                      return;
                     }
-                });
+                    $.ajax({
+                        url: '/synthesize-response',
+                        data: dataToLLM, 
+                        type: 'POST',
+                        success: function(response){
+                            console.log(response)
+                            setTimeout(() => {
+                                appendMessage("left", response);
+                              }, delay);
+                        },
+                        error: function(error){
+                          console.log(error);
+                          setTimeout(() => {
+                            appendMessage("left", ERROR_MESSAGE);
+                          }, delay);
+                      }
+                    });
+                    
+                },
+                error: function(error){
+                    console.log(error);
+                    setTimeout(() => {
+                      appendMessage("left", ERROR_MESSAGE);
+                    }, delay);
+                }
+            })
+
+          },
+          error: function(error) {
+            console.log(error);
+            setTimeout(() => {
+              appendMessage("left", ERROR_MESSAGE);
+            }, delay);
+          }
+        })
+        
+        // var collectionText = "main_collection"
+        
+        // var dataToDB = {"query" : query, "collection" : collectionText}
+        // $.ajax({
+        //     url: '/query',
+        //     data: dataToDB,
+        //     type: 'POST',
+        //     success: function(dataArray){
+        //         metadatas = dataArray[0][0] // array of 10 objects
+        //         documents = dataArray[1][0] // array of 10 strings\
+        //         console.log("meta")
+        //         console.log(metadatas)
+        //         console.log("documents")
+        //         console.log(documents)
+        //         relevantDocuments = documents.join('\n')
+        //         properties = ["name", "address", "halal", "beverage", "soup", "seafood", "healthy", "fast food",  "local", "countries"]
+
+        //         // Update the table 
+        //         const table = document.createElement("table");
+        //         const title = document.createElement("caption");
+        //         const titleText = document.createTextNode("Query: " + query);
+        //         title.appendChild(titleText);
+        //         table.appendChild(title);
+        //         title.style.fontSize = "15px";
+        //         title.style.fontWeight = "bold";
+        //         title.style.textAlign = "left";
+        //         title.style.color = "#555";
+        //         title.style.paddingBottom = "10px";
                 
-            },
-            error: function(error){
-                console.log(error);
-            }
-        });
+        //         const hrow = document.createElement("tr");
+        //         table.appendChild(hrow);
+                
+
+        //         for(let property of properties)
+        //             {
+        //                 const th = document.createElement("th");
+        //                 const thtext = document.createTextNode(property);
+        //                 th.appendChild(thtext);
+        //                 hrow.appendChild(th);
+        //             }
+
+        //         for(let met of metadatas)
+        //             {
+        //                 const drow = document.createElement("tr");
+        //                 table.appendChild(drow);
+                
+        //                 for(let property of properties)
+        //                 {
+        //                     const td = document.createElement("td");
+        //                     const tdtext = document.createTextNode(met[property]);
+        //                     td.appendChild(tdtext);
+        //                     drow.appendChild(td);
+        //                 }
+        //             }
+        //         var rawTable = document.getElementById('raw_table')
+        //         rawTable.insertBefore(table, rawTable.firstChild);
+
+        //         var dataToLLM = {"query" : query, "documents" : relevantDocuments}
+        //         $.ajax({
+        //             url: '/synthesize-response',
+        //             data: dataToLLM, 
+        //             type: 'POST',
+        //             success: function(response){
+        //                 console.log(response)
+        //                 setTimeout(() => {
+        //                     appendMessage("left", response);
+        //                   }, delay);
+        //             }
+        //         });
+                
+        //     },
+        //     error: function(error){
+        //         console.log(error);
+        //     }
+        // });
         
     }
     
