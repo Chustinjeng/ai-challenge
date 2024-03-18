@@ -157,7 +157,7 @@ $(document).ready(function(){
                     var rawTable = document.getElementById('raw_table')
                     rawTable.insertBefore(table, rawTable.firstChild);
 
-                    var dataToLLM = {"query" : response, "documents" : relevantDocuments}
+                    var dataToLLM = {"query" : response, "documents" : relevantDocuments, "initial_query": query}
                     if (response === INVALID_QUERY_RESPONSE) {
                       setTimeout(() => {
                         appendMessage("left", response);
