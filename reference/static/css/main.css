@@ -245,14 +245,30 @@ body {
   justify-content: space-between;
   padding: 10px;
   border-bottom: var(--border);
-  background: #eee;
+  background: #7B73E6;
   color: #666;
 }
+
+
+.msger-logo {
+  width: 10%;
+}
+
+.msger-header-title {
+  color: white;
+  position: absolute;
+  left: 100px;
+  top: 60px;
+  font-family: 'Gill Sans';
+}
+
 
 .msger-chat {
   flex: 1;
   overflow-y: auto;
   padding: 10px;
+  background-image: url("https://wallpapers.com/images/high/krusty-krab-zoom-background-6vsxog3jpmkidpji.webp");
+  background-size: cover;
 }
 .msger-chat::-webkit-scrollbar {
   width: 6px;
@@ -286,20 +302,29 @@ body {
   padding: 20px;
   border-radius: 15px;
   background: var(--left-msg-bg);
+  border-color: black;
+  border: 2px solid grey;
 }
 .msg-info {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 10px;
+  position: relative;
+  top: -2px;
 }
 .msg-info-name {
   margin-right: 10px;
   font-weight: bold;
+  color: black;
+  font-family: "courier new";
 }
+
+
 
 .left-msg .msg-bubble {
   border-bottom-left-radius: 0;
+  background-color: #E4E3F0;
 }
 
 .right-msg {
@@ -309,6 +334,7 @@ body {
   background: var(--right-msg-bg);
   color: #fff;
   border-bottom-right-radius: 0;
+  background-color: lightblue;
 }
 .right-msg .msg-img {
   margin: 0 0 0 10px;
@@ -349,6 +375,11 @@ body {
 
 .msger-chat {
   background-color: #fcfcfe;
+}
+
+.msg-text {
+  color: #664E4E;
+  font-family: "Cochin";
 }
 
 

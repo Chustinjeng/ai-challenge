@@ -45,7 +45,7 @@ $(document).ready(function(){
     const msgerInput = get(".msger-input");
     const msgerChat = get(".msger-chat");
     
-    // const BOT_IMG = "https://www.flaticon.com/free-icon/user_149071";
+    const BOT_IMG = "./images/robot_chef.jpg";
     // const PERSON_IMG = "https://www.flaticon.com/free-icon/user_149071";
     // const BOT_NAME = "BOT";
     // const PERSON_NAME = "You";
@@ -64,15 +64,60 @@ $(document).ready(function(){
     
     function appendMessage(side, text) {
       //   Simple solution for small apps
+      const AVATAR_URL = (side == "left") ? "https://as2.ftcdn.net/v2/jpg/03/51/61/49/1000_F_351614912_nhPej8tYdn8gytfBnBPag8HBUt2vaznE.jpg" : "https://icons.iconarchive.com/icons/papirus-team/papirus-status/256/avatar-default-icon.png";
+      
+      let lines = text.split('\n');
+
+      let header = lines[0]
+      if (header[0] == "*") {
+        header = header.slice(2, -2);
+      } else if (header[1] == "h") {
+        header = header.slice(4, -5);
+      } else if (header[1] == "b") {
+        header = header.slice(3, -4);
+      }
+
+      lines.splice(0,1);
+      let new_text = lines.join("\n");
+
+      const tempElement = document.createElement('div');
+      tempElement.innerHTML = new_text;
+      const titleElements = tempElement.querySelectorAll('li b');
+
+      const titles = Array.from(titleElements).map(b => b.textContent.trim());
+      const liElements = tempElement.querySelectorAll('li');
+      const listItems = Array.from(liElements).map(li => li.textContent.trim());
+      console.log(listItems);
+
+      let overall_response = header + "<br><br><br>";
+      for (let i = 0; i < listItems.length; i += 1) {
+          // let all_lines = listItems[i].split('.');
+          // // if (all_lines.length > 1) {
+          // //   all_lines.splice(0,1);
+          // // }
+          // const desc = all_lines.join();
+          const res_to_add = "<b><u>" + titles[i] + "</b></u><br>" + listItems[i] + "<br><br>";
+          overall_response += res_to_add;
+      }
+
+
+      console.log(overall_response)
+      
       const msgHTML = `
         <div class="msg ${side}-msg">
+
+        <div
+        class="msg-img"
+        >
+        <img class="msg-img" src=${AVATAR_URL}>
+        </div>
     
           <div class="msg-bubble">
             <div class="msg-info">
+              <div class="msg-info-name">${side == "left" ? "FoodBOT" : "You"}</div>
             
             </div>
-    
-            <span class="msg-text">${text}</span>
+            <span class="msg-text">${side == "left" ? overall_response : text}</span>
           </div>
         </div>
       `;
