@@ -1,17 +1,18 @@
 # Importing flask module in the project is mandatory
 # An object of Flask class is our WSGI application.
+import math
+import googlemaps
+import google.generativeai as palm
+from huggingface_hub import login
+from transformers import AutoModelForCausalLM, AutoTokenizer, AutoModelForPreTraining, BitsAndBytesConfig
+from chromadb.utils import embedding_functions
+from chromadb.config import Settings
+import chromadb
+from flask_socketio import SocketIO
+from flask import Flask, render_template, request, json
 import pysqlite3
 import sys
 sys.modules["sqlite3"] = sys.modules.pop("pysqlite3")
-from flask import Flask, render_template, request, json
-from flask_socketio import SocketIO
-import chromadb
-from chromadb.config import Settings
-from chromadb.utils import embedding_functions
-from transformers import AutoModelForCausalLM, AutoTokenizer, AutoModelForPreTraining, BitsAndBytesConfig
-from huggingface_hub import login
-import google.generativeai as palm
-import googlemaps
 # import geocoder
 
 
@@ -23,24 +24,41 @@ palm_api_key = "AIzaSyAL1kGbBzgVKoVOZ6fhSL8qN9GKeBNpoA0"
 palm.configure(api_key=palm_api_key)  # set API key
 
 chroma_client = chromadb.PersistentClient(path="../chromadb")
-sentence_transformer_ef = embedding_functions.SentenceTransformerEmbeddingFunction(model_name="all-mpnet-base-v2")
+sentence_transformer_ef = embedding_functions.SentenceTransformerEmbeddingFunction(
+    model_name="all-mpnet-base-v2")
 app = Flask(__name__)
 # def get_current_location():
 #     g = geocoder.ip('me')
 
 #     return g.latlng
 
+
 def get_location(location):
     geocode_result = gmaps.geocode(location)[0]
-    northeast_lat = geocode_result['geometry']['bounds']['northeast']['lat']
-    northeast_lng = geocode_result['geometry']['bounds']['northeast']['lng']
-    southwest_lat = geocode_result['geometry']['bounds']['southwest']['lat']
-    southwest_lng = geocode_result['geometry']['bounds']['southwest']['lng']
-    center_lat = (southwest_lat + northeast_lat) / 2
-    center_lng = (southwest_lng + northeast_lng) / 2
-    return center_lat, center_lng
+    print(geocode_result)
+    latitude = geocode_result['geometry']['location']['lat']
+    longitude = geocode_result['geometry']['location']['lng']
 
-print(get_location('Jurong, Singapore'))
+    # northeast_lat = geocode_result['geometry']['location']['northeast']['lat']
+    # northeast_lng = geocode_result['geometry']['location']['northeast']['lng']
+    # southwest_lat = geocode_result['geometry']['location']['southwest']['lat']
+    # southwest_lng = geocode_result['geometry']['location']['southwest']['lng']
+    # center_lat = (southwest_lat + northeast_lat) / 2
+    # center_lng = (southwest_lng + northeast_lng) / 2
+    return latitude, longitude
+
+print(get_location("Jurong, Singapore"))
+
+def get_range(lat, lon, radius):
+    """
+    Get the range of latitudes and longitudes within a certain distance (in kilometers) 
+    of a given latitude and longitude
+    """
+    lat_range = radius / 111.0  # 1 degree of latitude is approximately 111 kilometers
+    # 1 degree of longitude varies with latitude
+    lon_range = radius / (111.0 * math.cos(math.radians(lat)))
+    return (lat - lat_range, lat + lat_range), (lon - lon_range, lon + lon_range)
+
 
 # current latitude and longitude of user
 # latitude, longitude = get_current_location()
@@ -54,6 +72,7 @@ UNRELATED_PROMPT = "Please type in a prompt that is related to food!"
 
 # tokenizer = AutoTokenizer.from_pretrained("google/gemma-7b")
 # model = AutoModelForCausalLM.from_pretrained("google/gemma-7b", quantization_config=quantization_config)
+
 
 def parse_json(json_file):
     halal_attributes = []
@@ -108,7 +127,6 @@ def parse_json(json_file):
             else:
                 local_attributes.extend(["True", "False"])
 
-        
     countries = json_file["countries"]
     countries_list = countries.split(",")
     for country in countries_list:
@@ -135,15 +153,12 @@ def parse_json(json_file):
         if "india" in country.lower():
             country_attributes.append("indian")
 
-
     return halal_attributes, beverage_attributes, soup_attributes, seafood_attributes, healthy_attributes, fast_food_attributes, local_attributes, country_attributes
 
 
-
 @app.route('/')
-
 def home():
-    #return 'Hello World'
+    # return 'Hello World'
     return render_template('index.html')
 
 # @app.route('/get-collections', methods=['POST'])
@@ -157,6 +172,7 @@ def home():
 #     collections = collection_string.split()
 #     return json.dumps(collections)
 
+
 @app.route('/intermediate_query', methods=['POST'])
 def intermediate_query():
     query = request.form.getlist('query')[0]
@@ -169,10 +185,20 @@ def intermediate_query():
 
     You will have to seive out the characteristics of food that is relevant to the prompt. 
     These characteristics include "halal", "beverage", "soup", "seafood", "healthy", "fast food" and "local".
+    The user may or may not input a location in Singapore. 
+    If the user inputs a location, you would have to identify and output the location.
+
+    The format that you MUST follow when outputting the response is as follows:
+    <Characteristics> [SEP] <Location>
 
     If the given prompt is related to food, please list out the characteristics that are most relevant to the prompt. 
     If the user gives a specific type of cuisine, that he/she wants to eat, you must include it in the response as well. 
     For example, Japanese cuisine, Korean cuisine, Western cuisine, Thailand cuisine amongst many others.
+    If the user inputs a European cuisine (Greek, British etc.) or an American cuisine, you MUST generalize it to become Western cuisine.
+    E.g. American food = Western 
+        Greek food = Western
+        British food = Western
+        etc.
 
     Example 1:
     Prompt: I like to play sports.
@@ -180,41 +206,67 @@ def intermediate_query():
     Reason: The above prompt is not related to food, so we should give the response as expected.
 
     Example 2:
-    Prompt: I have a sore throat, what should I eat?
-    Expected response: soup, healthy, no fast food
+    Prompt: I have a sore throat, what should I eat? 
+    Expected response: soup, healthy, no fast food [SEP] None
     
     Reason: The user has a sore throat, so the user should consider soup or healthy options, but the user should not consider fast food options.
+            The user did NOT type a location that he/she wants to eat in, so you must type "None" after the separator [SEP].
 
     Example 3:
-    Prompt: I want to eat western food, what should I eat?
-    Expected response: Western
+    Prompt: I want to eat western food, what should I eat at Clementi?
+    Expected response: Western [SEP] Clementi
     
-    Reason: The user wants to eat western food, but the user did not mention any other characteristics, so the user should only consider western food options, and there should not be any other characteristics in the response.
+    Reason: The user wants to eat western food, but the user did not mention any other characteristics, so the user should only consider western food options, and there should not be any other characteristics of food.
+            The user typed a location that he/she wants to eat in, which is "Clementi", so you must type "Clementi" after the separator [SEP].
 
     Example 4:
-    Prompt: I want to eat fried western food, what should I eat?
-    Expected response: not healthy, Western
+    Prompt: I want to eat fried American food, what should I eat? I would like to eat at Bishan.
+    Expected response: fattening, Western [SEP] Bishan
 
-    Reason: The user wants to eat fried western food, so the user should not consider healthy options. Since the user specifically said that he/she wants to eat western food, you also output "Western" in the response.
+    Reason: The user wants to eat fried western food, so the user should not consider healthy options. Since the user specifically said that he/she wants to eat Western food, you also output "Western" in the response.
+            The user typed a location that he/she wants to eat in, which is "Bishan", so you must type "Bishan" after the separator [SEP].
 
     Example 5:
-    Prompt: I want to eat local halal food.
-    Expected response: local, halal
+    Prompt: I want to eat American/Greek/British/Irish food near Clementi
+    Expected response: Western [SEP] Clementi
+
+    Reason: The user wants to eat American food, so the user should not consider healthy options. Since the user specifically said that he/she wants to eat American food, you also output "Western" in the response, as American food is generalized to "Western".
+            The user typed a location that he/she wants to eat in, which is "Clementi", so you must type "Clementi" after the separator [SEP].
+            
+    Example 5:
+    Prompt: I am at Serangoon Avenue 1 and I want to eat local halal food.
+    Expected response: local, halal [SEP] Serangoon Avenue 1
     
     Reason: The user wants to eat local halal food, so the user should consider local options and halal options. 
+            The user typed a location that he/she wants to eat in, which is "Serangoon Avenue 1", so you must type "Serangoon Avenue 1" after the separator [SEP].
+
+    Example 6:
+    Prompt: I am near NUS and I want to eat a cheat meal
+    Expected response: fried, fast food, fattening [SEP] NUS
+    
+    Reason: The user wants to eat a cheat meal, which is the same as an unhealthy meal, so the user should consider fried food and fast food options which are fattening.
+            You MUST type in fried, fast food and fattening in the output.
+            The user typed a location that he/she wants to eat in, which is "NUS", so you must type "NUS" after the separator [SEP].
+
+    For any prompt that involves unhealthy food, do NOT output "unhealthy" in the response. Instead, you MUST output "fattening" in the response.
+
     <</SYS>>
     {query} [/INST]
     '''
-    response = palm.generate_text(model='models/text-bison-001', prompt=prompt_template, temperature=0.1)  # get response from Google's PaLM API
+    response = palm.generate_text(model='models/text-bison-001', prompt=prompt_template,
+                                  temperature=0.1)  # get response from Google's PaLM API
     return response.result
-    
+
 
 @app.route('/query', methods=['POST'])
 def query():
-    query =  request.form.getlist('query')[0]
-    collection =  request.form.getlist('collection')[0]
+    query_data = request.form.getlist('query')[0]
+    print(query_data)
+    query, initial_location = query_data.split('[SEP]')
+    collection = request.form.getlist('collection')[0]
     print("can get")
     print(query)
+    print("location", initial_location)
     if query != UNRELATED_PROMPT:
 
         prompt_template = f'''[INST] <<SYS>>
@@ -297,6 +349,27 @@ def query():
                 You output "not healthy, Japanese" for the "characteristics" part because it is in the prompt.
                 No other categories were mentioned, so you output "Any" for the rest of the categories.
 
+        Example 4:
+        Nice
+
+        Expected output:
+                {{
+                    "halal": "Any", 
+                    "beverage": "Any", 
+                    "soup": "Any", 
+                    "seafood": "Any", 
+                    "healthy": "False", 
+                    "fast food": "Any", 
+                    "local": "Any", 
+                    "countries": "",  
+                    "characteristics": "nice"
+                }}
+
+        Reason: The only characteristic in the prompt is "nice"
+                No country is mentioned in the prompt, so you output "" for countries
+                You output "nice" for the "characteristics" part because it is in the prompt.
+                No other categories were mentioned, so you output "Any" for the rest of the categories.
+
         Again, you are based in Singapore, so any food that is not Singaporean food is NOT local food. Food that is not in Singapore is NOT local food. 
         For example, German food, Italian food, Thai food, Korean food, Vietnamese food, Japanese food, Western food amongst many others are NOT local food. You MUST output "local": "False" in the response.
 
@@ -306,10 +379,13 @@ def query():
         <</SYS>>
         {query} [/INST]
         '''
-        response = palm.generate_text(model='models/text-bison-001', prompt=prompt_template, temperature=0.1).result.strip().replace("```json", "")  # get response from Google's PaLM API
+        response = palm.generate_text(model='models/text-bison-001', prompt=prompt_template,
+                                      temperature=0.1).result.strip().replace("```json", "")  # get response from Google's PaLM API
         print(response)
+        response = response.replace("[ANS]", "").replace("[Q]", "").strip()
         response_json = json.loads(response)
-        halal_filter, beverage_filter, soup_filter, seafood_filter, healthy_filter, fast_food_filter, local_filter, country_filter = parse_json(response_json)
+        halal_filter, beverage_filter, soup_filter, seafood_filter, healthy_filter, fast_food_filter, local_filter, country_filter = parse_json(
+            response_json)
         print(halal_filter)
         print(beverage_filter)
         print(soup_filter)
@@ -321,38 +397,96 @@ def query():
         print(response_json)
         new_prompt = response_json["characteristics"]
         print(new_prompt)
-        
+
     else:
-        chroma_collection = chroma_client.get_collection(name=collection, embedding_function=sentence_transformer_ef)
+        chroma_collection = chroma_client.get_collection(
+            name=collection, embedding_function=sentence_transformer_ef)
         results = chroma_collection.query(query_texts=[query], n_results=10)
         retrieved_documents = [results['metadatas'], results['documents']]
         return retrieved_documents
-        
+
+    # get location through google maps
+    location = initial_location.strip()
+    modified_location = location + ", Singapore"
+    location_lat, location_lng = get_location(modified_location)
+    lat_range, lng_range = get_range(location_lat, location_lng, 2)
+    print("coordinates range")
+    print(lat_range, lng_range)
+    lat_min, lat_max = lat_range
+    lng_min, lng_max = lng_range
+
     print(collection)
-    chroma_collection = chroma_client.get_collection(name=collection, embedding_function=sentence_transformer_ef)
-    if len(country_filter) == 0:
-        results = chroma_collection.query(query_texts=[new_prompt], n_results=10,
-                                       where={"$or": [{"halal": {"$in": halal_filter}},
-                                                       {"beverage": {"$in": beverage_filter}},
-                                                       {"soup": {"$in": soup_filter}},
-                                                       {"seafood": {"$in": seafood_filter}},
-                                                       {"healthy": {"$in": healthy_filter}},
-                                                       {"fast food": {"$in": fast_food_filter}},
-                                                       {"local": {"$in": local_filter}}]})
+    chroma_collection = chroma_client.get_collection(
+        name=collection, embedding_function=sentence_transformer_ef)
+    if location == "None":
+        results = chroma_collection.query(query_texts=[new_prompt], n_results=5,
+                                          where={"$and": [
+                                              {"halal": {"$in": halal_filter}},
+                                              {"$or": [
+                                                       {"beverage": {
+                                                           "$in": beverage_filter}},
+                                                       {"soup": {
+                                                           "$in": soup_filter}},
+                                                       {"seafood": {
+                                                           "$in": seafood_filter}},
+                                                       {"healthy": {
+                                                           "$in": healthy_filter}},
+                                                       {"fast food": {
+                                                           "$in": fast_food_filter}},
+                                                       {"local": {
+                                                           "$in": local_filter}}]}]})
     else:
-        results = chroma_collection.query(query_texts=[new_prompt], n_results=10,
-                                       where={"$or": [{"halal": {"$in": halal_filter}},
-                                                       {"beverage": {"$in": beverage_filter}},
-                                                       {"soup": {"$in": soup_filter}},
-                                                       {"seafood": {"$in": seafood_filter}},
-                                                       {"healthy": {"$in": healthy_filter}},
-                                                       {"fast food": {"$in": fast_food_filter}},
-                                                       {"local": {"$in": local_filter}}]})
+        # results = chroma_collection.query(query_texts=[new_prompt], n_results=10,
+        #                                   where={"$or": [{"halal": {"$in": halal_filter}},
+        #                                                  {"beverage": {
+        #                                                      "$in": beverage_filter}},
+        #                                                  {"soup": {
+        #                                                      "$in": soup_filter}},
+        #                                                  {"seafood": {
+        #                                                      "$in": seafood_filter}},
+        #                                                  {"healthy": {
+        #                                                      "$in": healthy_filter}},
+        #                                                  {"fast food": {
+        #                                                      "$in": fast_food_filter}},
+        #                                                  {"local": {
+        #                                                      "$in": local_filter}},
+        #                                                  {"$and": [{"longitude": {
+        #                                                      "$gte": lng_min
+        #                                                  }},
+        #                                                      {"longitude": {
+        #                                                          "$lte": lng_max}},
+        #                                                      {"latitude": {
+        #                                                          "$gte": lat_min}},
+        #                                                      {"latitude": {"$lte": lat_max}}]}]})
+        results = chroma_collection.query(query_texts=[new_prompt], n_results=5,
+                                          where={"$and": [{"longitude": {
+                                              "$gte": lng_min
+                                          }},
+                                              {"longitude": {
+                                                  "$lte": lng_max}},
+                                              {"latitude": {
+                                                  "$gte": lat_min}},
+                                              {"latitude": {"$lte": lat_max}},
+                                              {"halal": {"$in": halal_filter}},
+                                              {"$and": [
+                                                       {"beverage": {
+                                                           "$in": beverage_filter}},
+                                                       {"soup": {
+                                                           "$in": soup_filter}},
+                                                       {"seafood": {
+                                                           "$in": seafood_filter}},
+                                                       {"healthy": {
+                                                           "$in": healthy_filter}},
+                                                       {"fast food": {
+                                                           "$in": fast_food_filter}},
+                                                       {"local": {
+                                                           "$in": local_filter}}]}]})
     # print(results)
     retrieved_documents = [results['metadatas'], results['documents']]
     print(retrieved_documents)
     # print("METADATA: ", results['metadatas'])
     return retrieved_documents
+
 
 @app.route('/synthesize-response', methods=['POST'])
 def synthesize_response():
@@ -365,9 +499,9 @@ def synthesize_response():
     print(initial_query)
     print("context")
     print(context)
-    
+
     prompt = f"{initial_query} [SEP] {context}"
-    prompt_template=f'''[INST] <<SYS>>
+    prompt_template = f'''[INST] <<SYS>>
             
     You are an experienced food blogger and nutritionist in Singapore. Respond to user prompts using only the information given. 
 
@@ -379,7 +513,8 @@ def synthesize_response():
     Because you are a nutritionist, you need to give some medical advice to users who are suffering from a certain health condition. You need to let them know what food they should eat, or what food they should cut down on.
     After giving the users the restaurants, you would have to give some further medical advice as mentioned above.
 
-    You MUST always answer in HTML markdown formatting. You will be penalized if you do not answer with HTML markdown when it would be possible. The HTML markdown formatting you support: headings, bold, italic, links, tables, lists, code blocks, and blockquotes.
+    In your answer, do NOT use symbols like * or ** in your answer, otherwise you will be penalized.
+    You MUST always answer in HTML formatting. You will be penalized if you do not answer with HTML when it would be possible. The HTML formatting you support: headings, bold, italic, links, tables, lists, code blocks, and blockquotes.
     Example:
     For new lines or '\n', replace with the html element, <br />
     For bullet points and lists, return them in the following format:
@@ -391,33 +526,34 @@ def synthesize_response():
     For underlined items: 
         <u>text to be underlined</u>
 
-    Remember to answer in HTML markdown formatting! Do NOT use symbols like * or ** in your answer, otherwise you will be penalized.
+    Remember to answer in HTML formatting! Do NOT use symbols like * or ** in your answer, otherwise you will be penalized.
     <</SYS>>
     {prompt}[/INST]
     '''
-    
+
     # input_ids = tokenizer(prompt_template, return_tensors='pt')
     # # input_ids = tokenizer(prompt_template, return_tensors='tf')
 
     # output = model.generate(inputs=input_ids, temperature=0.7, do_sample=True, top_p=0.95, top_k=40, max_new_tokens=512)
     # output = model(input_ids)
-    response = palm.generate_text(model='models/text-bison-001', prompt=prompt_template, temperature=0.1)  # get response from Google's PaLM API
+    # get response from Google's PaLM API
+    response = palm.generate_text(
+        model='models/text-bison-001', prompt=prompt_template, temperature=0.1)
 
     # output = replicate.run()
     # response = tokenizer.decode(output[0])
     # clean_response = response.split('[/INST]')[-1]
     print(response.result)
     return response.result
-    
+
+
 # main driver function
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=8080)
     # socketio.run(app, host="0.0.0.0", debug=True)
-    
-
 
     # For example:
-    # User prompt: 
+    # User prompt:
     #     If you want to eat something light, you can consider the following options:
     #     - healthy: true
     #     - fast food: false
