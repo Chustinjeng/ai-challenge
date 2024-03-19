@@ -62,46 +62,52 @@ $(document).ready(function(){
       msgerInput.value = "";
     });
     
-    function appendMessage(side, text) {
+    function appendMessage(side, text, names) {
       //   Simple solution for small apps
       const AVATAR_URL = (side == "left") ? "https://as2.ftcdn.net/v2/jpg/03/51/61/49/1000_F_351614912_nhPej8tYdn8gytfBnBPag8HBUt2vaznE.jpg" : "https://icons.iconarchive.com/icons/papirus-team/papirus-status/256/avatar-default-icon.png";
       
-      let lines = text.split('\n');
+      let overall_response = ""
 
-      let header = lines[0]
-      if (header[0] == "*") {
-        header = header.slice(2, -2);
-      } else if (header[1] == "h") {
-        header = header.slice(4, -5);
-      } else if (header[1] == "b") {
-        header = header.slice(3, -4);
+      if (side == "right") {
+        overall_response = text;
+      } else {
+        let new_text = text.replace(/\*/g, "");
+        new_text = new_text.replace(/<b>/g, "");
+        new_text = new_text.replace(/<\/b>/g, "");
+        new_text = new_text.replace(/<\/ul>/g, "");
+        new_text = new_text.replace(/<ul>/g, "");
+        new_text = new_text.replace(/<li>/g, "");
+        new_text = new_text.replace(/<\/li>/g, "");
+        new_text = new_text.replace(/<\/h2>/g, "");
+        new_text = new_text.replace(/<h2>/g, "");
+        new_text = new_text.replace(/#/g, "");
+        console.log(new_text);
+
+        let lines = new_text.split('\n');
+        lines = lines.filter(item => item.trim() !== "");
+        console.log(lines);
+
+        let header = lines[0]
+        overall_response = header + "<br><br><br>";
+        
+        let restaurantCursor = 0
+        for (let i = 1; i < lines.length; i += 1) {
+          let line = ""
+          if (restaurantCursor < 5 && lines[i].includes(names[restaurantCursor])) {
+            line += "<b><u>" + names[restaurantCursor] + "</u></b><br>" + lines[i] + "<br><br>";
+            line += (restaurantCursor == 4 ? "<br>" : "");
+            restaurantCursor += 1
+          } else {
+            if (restaurantCursor > 5) {
+              line += lines[i] += "<br>"
+            } else {
+              line += lines[i] += "<br><br>"
+            }
+          }
+            overall_response += line;
+        }
+        console.log(overall_response)
       }
-
-      lines.splice(0,1);
-      let new_text = lines.join("\n");
-
-      const tempElement = document.createElement('div');
-      tempElement.innerHTML = new_text;
-      const titleElements = tempElement.querySelectorAll('li b');
-
-      const titles = Array.from(titleElements).map(b => b.textContent.trim());
-      const liElements = tempElement.querySelectorAll('li');
-      const listItems = Array.from(liElements).map(li => li.textContent.trim());
-      console.log(listItems);
-
-      let overall_response = header + "<br><br><br>";
-      for (let i = 0; i < listItems.length; i += 1) {
-          // let all_lines = listItems[i].split('.');
-          // // if (all_lines.length > 1) {
-          // //   all_lines.splice(0,1);
-          // // }
-          // const desc = all_lines.join();
-          const res_to_add = "<b><u>" + titles[i] + "</b></u><br>" + listItems[i] + "<br><br>";
-          overall_response += res_to_add;
-      }
-
-
-      console.log(overall_response)
       
       const msgHTML = `
         <div class="msg ${side}-msg">
@@ -157,11 +163,13 @@ $(document).ready(function(){
                     console.log(metadatas)
                     console.log("documents")
                     console.log(documents)
+                    const justNames = metadatas.map(x => x.name)
                     const restaurantNames = metadatas.map(x => x.address)
+                    console.log(restaurantNames)
                     // relevantDocuments = documents.join('\n')
                     const relevantDocuments = restaurantNames.join('\n')
                     const properties = ["name", "address", "halal", "beverage", "soup", "seafood", "healthy", "fast food",  "local", "countries", "longitude", "latitude"]
-
+                    
                     // Update the table 
                     const table = document.createElement("table");
                     const title = document.createElement("caption");
@@ -216,7 +224,7 @@ $(document).ready(function(){
                         success: function(response){
                             console.log(response)
                             setTimeout(() => {
-                                appendMessage("left", response);
+                                appendMessage("left", response, justNames);
                               }, delay);
                         },
                         error: function(error){
