@@ -401,7 +401,7 @@ def query():
                                                   "$gte": lat_min}},
                                               {"latitude": {"$lte": lat_max}},
                                               {"halal": {"$in": halal_filter}},
-                                              {"$and": [
+                                              {"$or": [
                                                        {"beverage": {
                                                            "$in": beverage_filter}},
                                                        {"soup": {
