@@ -205,42 +205,47 @@ def intermediate_query():
     Expected response: Please type in a prompt that is related to food!
     Reason: The above prompt is not related to food, so we should give the response as expected.
 
-    Example 2:
+    Example 2: 
+    Prompt: I want to find/eat food.
+    Expected response: nice food, healthy
+    Reason: The user wants to eat food, but the user did not include any preference, so we should output "nice food" and "healthy" in the response.
+
+    Example 3:
     Prompt: I have a sore throat, what should I eat? 
     Expected response: soup, healthy, no fast food [SEP] None
     
     Reason: The user has a sore throat, so the user should consider soup or healthy options, but the user should not consider fast food options.
             The user did NOT type a location that he/she wants to eat in, so you must type "None" after the separator [SEP].
 
-    Example 3:
+    Example 4:
     Prompt: I want to eat western food, what should I eat at Clementi?
     Expected response: Western [SEP] Clementi
     
     Reason: The user wants to eat western food, but the user did not mention any other characteristics, so the user should only consider western food options, and there should not be any other characteristics of food.
             The user typed a location that he/she wants to eat in, which is "Clementi", so you must type "Clementi" after the separator [SEP].
 
-    Example 4:
+    Example 5:
     Prompt: I want to eat fried American food, what should I eat? I would like to eat at Bishan.
     Expected response: fattening, Western [SEP] Bishan
 
     Reason: The user wants to eat fried western food, so the user should not consider healthy options. Since the user specifically said that he/she wants to eat Western food, you also output "Western" in the response.
             The user typed a location that he/she wants to eat in, which is "Bishan", so you must type "Bishan" after the separator [SEP].
 
-    Example 5:
+    Example 6:
     Prompt: I want to eat American/Greek/British/Irish food near Clementi
     Expected response: Western [SEP] Clementi
 
     Reason: The user wants to eat American food, so the user should not consider healthy options. Since the user specifically said that he/she wants to eat American food, you also output "Western" in the response, as American food is generalized to "Western".
             The user typed a location that he/she wants to eat in, which is "Clementi", so you must type "Clementi" after the separator [SEP].
             
-    Example 5:
+    Example 7:
     Prompt: I am at Serangoon Avenue 1 and I want to eat local halal food.
     Expected response: local, halal [SEP] Serangoon Avenue 1
     
     Reason: The user wants to eat local halal food, so the user should consider local options and halal options. 
             The user typed a location that he/she wants to eat in, which is "Serangoon Avenue 1", so you must type "Serangoon Avenue 1" after the separator [SEP].
 
-    Example 6:
+    Example 8:
     Prompt: I am near NUS and I want to eat a cheat meal
     Expected response: fried, fast food, fattening [SEP] NUS
     
