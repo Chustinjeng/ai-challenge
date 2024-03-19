@@ -2,7 +2,7 @@
 
 Hi! We are ghetto hackers, and we would like to present to you our LLM-powered software FoodBot!
 
-FoodBot is your food enthusiast and nutritionist in Singapore. While he has tremendous knowledge of food around Singapore, he is constantly looking out for your health and making sure that you are eating healthy, but at the same time having the privilege to choose from a variety of food options. If you are not sure of what to eat, do tell FoodBot what you are craving/what your health conditions are/any type of food that you would prefer, and he will give you a handful of options to choose from!
+FoodBot is your typical food enthusiast and nutritionist in Singapore. While he has tremendous knowledge of food around Singapore, he is constantly looking out for your health and making sure that you are eating healthy, but at the same time having the privilege to choose from a variety of food options. If you are not sure of what to eat, do tell FoodBot what you are craving/what your health conditions are/any type of food that you would prefer, and he will give you a handful of options to choose from!
 
 ## Description of software and LLM
 
