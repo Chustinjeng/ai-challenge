@@ -6,7 +6,7 @@ FoodBot is your typical food enthusiast and nutritionist in Singapore. While he 
 
 ## Description of software and LLM
 
-FoodBot was developed with Google's Palm2 as our LLM, Python's Flask as our backend, and Javascript and HTML as our frontend. 
+FoodBot was developed with Google's PaLM2 as our LLM, Python's Flask as our backend, and Javascript and HTML as our frontend. 
 
 We have also incorporated a vector database (chromadb) to store a [dataset](https://www.kaggle.com/datasets/polartech/16000-grab-restaurants-in-singapore/discussion) of over 16000 restaurants from all over Singapore. The vector database passes each data through an embedding layer and stores each data as a point in the vector space. When we query the vector database, the vector database will output the data that are the most relevant to the query.
 
