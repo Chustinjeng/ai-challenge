@@ -194,6 +194,11 @@ def intermediate_query():
     If the given prompt is related to food, please list out the characteristics that are most relevant to the prompt. 
     If the user gives a specific type of cuisine, that he/she wants to eat, you must include it in the response as well. 
     For example, Japanese cuisine, Korean cuisine, Western cuisine, Thailand cuisine amongst many others.
+    If the user inputs a European cuisine (Greek, British etc.) or an American cuisine, you MUST generalize it to become Western cuisine.
+    E.g. American food = Western 
+        Greek food = Western
+        British food = Western
+        etc.
 
     Example 1:
     Prompt: I like to play sports.
@@ -215,11 +220,18 @@ def intermediate_query():
             The user typed a location that he/she wants to eat in, which is "Clementi", so you must type "Clementi" after the separator [SEP].
 
     Example 4:
-    Prompt: I want to eat fried western food, what should I eat? I would like to eat at Bishan.
-    Expected response: not healthy, Western [SEP] Bishan
+    Prompt: I want to eat fried American food, what should I eat? I would like to eat at Bishan.
+    Expected response: fattening, Western [SEP] Bishan
 
-    Reason: The user wants to eat fried western food, so the user should not consider healthy options. Since the user specifically said that he/she wants to eat western food, you also output "Western" in the response.
+    Reason: The user wants to eat fried western food, so the user should not consider healthy options. Since the user specifically said that he/she wants to eat Western food, you also output "Western" in the response.
             The user typed a location that he/she wants to eat in, which is "Bishan", so you must type "Bishan" after the separator [SEP].
+
+    Example 5:
+    Prompt: I want to eat American/Greek/British/Irish food near Clementi
+    Expected response: Western [SEP] Clementi
+
+    Reason: The user wants to eat American food, so the user should not consider healthy options. Since the user specifically said that he/she wants to eat American food, you also output "Western" in the response, as American food is generalized to "Western".
+            The user typed a location that he/she wants to eat in, which is "Clementi", so you must type "Clementi" after the separator [SEP].
             
     Example 5:
     Prompt: I am at Serangoon Avenue 1 and I want to eat local halal food.
@@ -227,6 +239,16 @@ def intermediate_query():
     
     Reason: The user wants to eat local halal food, so the user should consider local options and halal options. 
             The user typed a location that he/she wants to eat in, which is "Serangoon Avenue 1", so you must type "Serangoon Avenue 1" after the separator [SEP].
+
+    Example 6:
+    Prompt: I am near NUS and I want to eat a cheat meal
+    Expected response: fried, fast food, fattening [SEP] NUS
+    
+    Reason: The user wants to eat a cheat meal, which is the same as an unhealthy meal, so the user should consider fried food and fast food options which are fattening.
+            You MUST type in fried, fast food and fattening in the output.
+            The user typed a location that he/she wants to eat in, which is "NUS", so you must type "NUS" after the separator [SEP].
+
+    For any prompt that involves unhealthy food, do NOT output "unhealthy" in the response. Instead, you MUST output "fattening" in the response.
 
     <</SYS>>
     {query} [/INST]
@@ -239,6 +261,7 @@ def intermediate_query():
 @app.route('/query', methods=['POST'])
 def query():
     query_data = request.form.getlist('query')[0]
+    print(query_data)
     query, initial_location = query_data.split('[SEP]')
     collection = request.form.getlist('collection')[0]
     print("can get")
@@ -359,6 +382,7 @@ def query():
         response = palm.generate_text(model='models/text-bison-001', prompt=prompt_template,
                                       temperature=0.1).result.strip().replace("```json", "")  # get response from Google's PaLM API
         print(response)
+        response = response.replace("[ANS]", "").replace("[Q]", "").strip()
         response_json = json.loads(response)
         halal_filter, beverage_filter, soup_filter, seafood_filter, healthy_filter, fast_food_filter, local_filter, country_filter = parse_json(
             response_json)
@@ -396,18 +420,21 @@ def query():
         name=collection, embedding_function=sentence_transformer_ef)
     if location == "None":
         results = chroma_collection.query(query_texts=[new_prompt], n_results=5,
-                                          where={"$or": [{"halal": {"$in": halal_filter}},
-                                                         {"beverage": {
-                                                             "$in": beverage_filter}},
-                                                         {"soup": {
-                                                             "$in": soup_filter}},
-                                                         {"seafood": {
-                                                             "$in": seafood_filter}},
-                                                         {"healthy": {
-                                                             "$in": healthy_filter}},
-                                                         {"fast food": {
-                                                             "$in": fast_food_filter}},
-                                                         {"local": {"$in": local_filter}}]})
+                                          where={"$and": [
+                                              {"halal": {"$in": halal_filter}},
+                                              {"$or": [
+                                                       {"beverage": {
+                                                           "$in": beverage_filter}},
+                                                       {"soup": {
+                                                           "$in": soup_filter}},
+                                                       {"seafood": {
+                                                           "$in": seafood_filter}},
+                                                       {"healthy": {
+                                                           "$in": healthy_filter}},
+                                                       {"fast food": {
+                                                           "$in": fast_food_filter}},
+                                                       {"local": {
+                                                           "$in": local_filter}}]}]})
     else:
         # results = chroma_collection.query(query_texts=[new_prompt], n_results=10,
         #                                   where={"$or": [{"halal": {"$in": halal_filter}},
@@ -440,7 +467,8 @@ def query():
                                               {"latitude": {
                                                   "$gte": lat_min}},
                                               {"latitude": {"$lte": lat_max}},
-                                              {"$or": [{"halal": {"$in": halal_filter}},
+                                              {"halal": {"$in": halal_filter}},
+                                              {"$and": [
                                                        {"beverage": {
                                                            "$in": beverage_filter}},
                                                        {"soup": {
