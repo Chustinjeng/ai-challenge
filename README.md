@@ -15,3 +15,7 @@ To make the result more personalised, we utilised the google maps API to decode 
 Of course, we greatly improved our LLM through prompt engineering techniques such as few-shot prompting, where we guide the LLM through example user prompts, expected outputs and the reasons behind them. Prompt engineering can shape responses in certain formats such as json formats, which facilitates data transfer in the backend.
 
 ## How to run the code
+
+1. Run ```pip install -r requirements.txt```
+2. Run all the cells in the ```import_data.ipynb``` file. This will take quite a while, as we are adding the data (and metadata) from the dataset into the vector database.
+3. Once done, you can run ```python3 code/app.py``` to activate the frontend and backend locally.
