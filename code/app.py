@@ -27,24 +27,17 @@ chroma_client = chromadb.PersistentClient(path="../chromadb")
 sentence_transformer_ef = embedding_functions.SentenceTransformerEmbeddingFunction(
     model_name="all-mpnet-base-v2")
 app = Flask(__name__)
-# def get_current_location():
-#     g = geocoder.ip('me')
-
-#     return g.latlng
 
 
 def get_location(location):
+    """
+    Gets the approximate latitude and longitude of a particular place in Singapore
+    """
     geocode_result = gmaps.geocode(location)[0]
     print(geocode_result)
     latitude = geocode_result['geometry']['location']['lat']
     longitude = geocode_result['geometry']['location']['lng']
 
-    # northeast_lat = geocode_result['geometry']['location']['northeast']['lat']
-    # northeast_lng = geocode_result['geometry']['location']['northeast']['lng']
-    # southwest_lat = geocode_result['geometry']['location']['southwest']['lat']
-    # southwest_lng = geocode_result['geometry']['location']['southwest']['lng']
-    # center_lat = (southwest_lat + northeast_lat) / 2
-    # center_lng = (southwest_lng + northeast_lng) / 2
     return latitude, longitude
 
 print(get_location("Jurong, Singapore"))
@@ -63,18 +56,13 @@ def get_range(lat, lon, radius):
 # current latitude and longitude of user
 # latitude, longitude = get_current_location()
 UNRELATED_PROMPT = "Please type in a prompt that is related to food!"
-# tokenizer = AutoTokenizer.from_pretrained("zanelim/singbert-large-sg")
-# model = AutoModelForPreTraining.from_pretrained("zanelim/singbert-large-sg")
-# model_name_or_path = "google/gemma-7b"
-# # To use a different branch, change revision
-# # For example: revision="main"
-# quantization_config = BitsAndBytesConfig(load_in_4bit=True)
-
-# tokenizer = AutoTokenizer.from_pretrained("google/gemma-7b")
-# model = AutoModelForCausalLM.from_pretrained("google/gemma-7b", quantization_config=quantization_config)
-
 
 def parse_json(json_file):
+    """
+    Returns the filters that we will search our metadata by.
+    E.g. If "halal" is "Any", the filter for "halal" is "True" and "False". 
+        If "halal" is "True", the filter will be "True", likewise for "False".
+    """
     halal_attributes = []
     beverage_attributes = []
     soup_attributes = []
@@ -82,7 +70,6 @@ def parse_json(json_file):
     healthy_attributes = []
     fast_food_attributes = []
     local_attributes = []
-    country_attributes = []
 
     for key, value in json_file.items():
         if key == "halal":
@@ -127,33 +114,8 @@ def parse_json(json_file):
             else:
                 local_attributes.extend(["True", "False"])
 
-    countries = json_file["countries"]
-    countries_list = countries.split(",")
-    for country in countries_list:
-        if "japan" in country.lower():
-            country_attributes.append("japanese")
-        if "korea" in country.lower():
-            country_attributes.append("korean")
-        if "thai" in country.lower():
-            country_attributes.append("thai")
-        if "western" in country.lower():
-            country_attributes.append("western")
-        if "viet" in country.lower():
-            country_attributes.append("vietnamese")
-        if "chinese" in country.lower():
-            country_attributes.append("chinese")
-        if "italian" in country.lower():
-            country_attributes.append("italian")
-        if "asian" in country.lower():
-            country_attributes.append("asian")
-        if "malaysia" in country.lower():
-            country_attributes.append("malaysian")
-        if "indonesia" in country.lower():
-            country_attributes.append("indonesian")
-        if "india" in country.lower():
-            country_attributes.append("indian")
 
-    return halal_attributes, beverage_attributes, soup_attributes, seafood_attributes, healthy_attributes, fast_food_attributes, local_attributes, country_attributes
+    return halal_attributes, beverage_attributes, soup_attributes, seafood_attributes, healthy_attributes, fast_food_attributes, local_attributes
 
 
 @app.route('/')
@@ -161,21 +123,11 @@ def home():
     # return 'Hello World'
     return render_template('index.html')
 
-# @app.route('/get-collections', methods=['POST'])
-# def get_collections():
-#     collection_string = str(chroma_client.list_collections())
-#     print("collection_string: ", collection_string)
-#     collection_string = collection_string.replace("Collection(name=","")
-#     collection_string = collection_string.replace("[","")
-#     collection_string = collection_string.replace("]","")
-#     collection_string = collection_string.replace(")","")
-#     collections = collection_string.split()
-#     return json.dumps(collections)
-
 
 @app.route('/intermediate_query', methods=['POST'])
 def intermediate_query():
     query = request.form.getlist('query')[0]
+    # prompt engineering for the LLM to output characteristics of food
     prompt_template = f'''[INST] <<SYS>>
 
     You will be given a prompt that is either related to food or not related to food. 
@@ -267,12 +219,14 @@ def intermediate_query():
 def query():
     query_data = request.form.getlist('query')[0]
     print(query_data)
+    # get the user query and the location where the user prefers
     query, initial_location = query_data.split('[SEP]')
     collection = request.form.getlist('collection')[0]
     print("can get")
     print(query)
     print("location", initial_location)
     if query != UNRELATED_PROMPT:
+        # prompt engineering for LLM to output a string in json format
 
         prompt_template = f'''[INST] <<SYS>>
         You are an experienced food nutritionist in Singapore. Given a prompt that lists a user's food preference and/or health conditions, output a response in JSON format as follows:
@@ -355,7 +309,7 @@ def query():
                 No other categories were mentioned, so you output "Any" for the rest of the categories.
 
         Example 4:
-        Nice
+        Prompt: Nice
 
         Expected output:
                 {{
@@ -389,17 +343,11 @@ def query():
         print(response)
         response = response.replace("[ANS]", "").replace("[Q]", "").strip()
         response_json = json.loads(response)
-        halal_filter, beverage_filter, soup_filter, seafood_filter, healthy_filter, fast_food_filter, local_filter, country_filter = parse_json(
+        halal_filter, beverage_filter, soup_filter, seafood_filter, healthy_filter, fast_food_filter, local_filter = parse_json(
             response_json)
-        print(halal_filter)
-        print(beverage_filter)
-        print(soup_filter)
-        print(seafood_filter)
-        print(healthy_filter)
-        print(fast_food_filter)
-        print(local_filter)
 
         print(response_json)
+        # the characteristics of the food is subsequently passed to the vector database for querying
         new_prompt = response_json["characteristics"]
         print(new_prompt)
 
@@ -413,12 +361,13 @@ def query():
     # get location through google maps
     location = initial_location.strip()
     modified_location = location + ", Singapore"
+    # get latitude and longitude from the location specified by user
     location_lat, location_lng = get_location(modified_location)
     lat_range, lng_range = get_range(location_lat, location_lng, 2)
     print("coordinates range")
     print(lat_range, lng_range)
-    lat_min, lat_max = lat_range
-    lng_min, lng_max = lng_range
+    lat_min, lat_max = lat_range # latitude range of 2km radius
+    lng_min, lng_max = lng_range # longitude range of 2km radius
 
     print(collection)
     chroma_collection = chroma_client.get_collection(
@@ -441,28 +390,7 @@ def query():
                                                        {"local": {
                                                            "$in": local_filter}}]}]})
     else:
-        # results = chroma_collection.query(query_texts=[new_prompt], n_results=10,
-        #                                   where={"$or": [{"halal": {"$in": halal_filter}},
-        #                                                  {"beverage": {
-        #                                                      "$in": beverage_filter}},
-        #                                                  {"soup": {
-        #                                                      "$in": soup_filter}},
-        #                                                  {"seafood": {
-        #                                                      "$in": seafood_filter}},
-        #                                                  {"healthy": {
-        #                                                      "$in": healthy_filter}},
-        #                                                  {"fast food": {
-        #                                                      "$in": fast_food_filter}},
-        #                                                  {"local": {
-        #                                                      "$in": local_filter}},
-        #                                                  {"$and": [{"longitude": {
-        #                                                      "$gte": lng_min
-        #                                                  }},
-        #                                                      {"longitude": {
-        #                                                          "$lte": lng_max}},
-        #                                                      {"latitude": {
-        #                                                          "$gte": lat_min}},
-        #                                                      {"latitude": {"$lte": lat_max}}]}]})
+        # if location is specified, conduct metadata search on the calculated latitudes and longitudes
         results = chroma_collection.query(query_texts=[new_prompt], n_results=5,
                                           where={"$and": [{"longitude": {
                                               "$gte": lng_min
@@ -486,10 +414,8 @@ def query():
                                                            "$in": fast_food_filter}},
                                                        {"local": {
                                                            "$in": local_filter}}]}]})
-    # print(results)
     retrieved_documents = [results['metadatas'], results['documents']]
     print(retrieved_documents)
-    # print("METADATA: ", results['metadatas'])
     return retrieved_documents
 
 
@@ -536,18 +462,10 @@ def synthesize_response():
     {prompt}[/INST]
     '''
 
-    # input_ids = tokenizer(prompt_template, return_tensors='pt')
-    # # input_ids = tokenizer(prompt_template, return_tensors='tf')
-
-    # output = model.generate(inputs=input_ids, temperature=0.7, do_sample=True, top_p=0.95, top_k=40, max_new_tokens=512)
-    # output = model(input_ids)
-    # get response from Google's PaLM API
+   
     response = palm.generate_text(
         model='models/text-bison-001', prompt=prompt_template, temperature=0.1)
 
-    # output = replicate.run()
-    # response = tokenizer.decode(output[0])
-    # clean_response = response.split('[/INST]')[-1]
     print(response.result)
     return response.result
 
@@ -557,30 +475,4 @@ if __name__ == '__main__':
     app.run(host="0.0.0.0", port=8080)
     # socketio.run(app, host="0.0.0.0", debug=True)
 
-    # For example:
-    # User prompt:
-    #     If you want to eat something light, you can consider the following options:
-    #     - healthy: true
-    #     - fast food: false
-    #     - soup: true
-    #     [SEP]
-    #     The Soup Spoon Union - Hillion Mall
-    #     Ding Ding Fish Soup & Ban Mian - Albert Centre
-    #     Subway - Seletar Mall
-
-    # Expected response:
-    #     Light food options:
-    #     - The Soup Spoon Union - Hillion Mall
-    #         - The Soup Spoon is a restaurant that serves mainly soupy dishes.
-    #     - Ding Ding Fish Soup & Ban Mian - Albert Centre
-    #     - Subway - Seletar Mall
-    #         - Subway is a fast-food chain that serves healthy sandwiches
-
-    #     You can also consider other restaurant options:
-    #     - The Daily Cut
-    #     - Project Acai
-
-    # Reason:
-    # Because you are a given a prompt containing the user's food preferences and the list of potential restaurants, you should output them in a list format as shown above.
-    # As mentioned, you are welcomed to give description of the restaurants.
-    # You are also welcomed to give other restaurant options that are not in the user prompt.
+    

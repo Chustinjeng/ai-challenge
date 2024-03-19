@@ -133,7 +133,7 @@ $(document).ready(function(){
     }
     
     const INVALID_QUERY_RESPONSE = "Please type in a prompt that is related to food!"
-    const ERROR_MESSAGE = "Sorry! An error occurred, please try again!"
+    const ERROR_MESSAGE = "Sorry! We couldn't process your message. Remember to type in a prompt that is related to food!"
 
     function botResponse(query) {
         
