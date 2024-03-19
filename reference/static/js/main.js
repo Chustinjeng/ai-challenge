@@ -114,7 +114,7 @@ $(document).ready(function(){
     
           <div class="msg-bubble">
             <div class="msg-info">
-              <div class="msg-info-name">${side == "left" ? "FoodBOT" : "You"}</div>
+              <div class="msg-info-name">${side == "left" ? "FoodBOT🍔" : "You"}</div>
             
             </div>
             <span class="msg-text">${side == "left" ? overall_response : text}</span>
