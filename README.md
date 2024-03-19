@@ -12,7 +12,7 @@ We have also incorporated a vector database (chromadb) to store a [dataset](http
 
 To make the result more personalised, we utilised the google maps API to decode the approximate coordinates of where the user would like to eat. Then, we search all the restaurants in the database that are within a 2km radius of the user's preferred location.
 
-Of course, we greatly improved our LLM through prompt engineering techniques such as few-shot prompting, where we guide the LLM through example user prompts, expected outputs and the reasons behind them. Prompt engineering can shape responses in certain formats such as json formats, which facilitates data transfer in the backend.
+Of course, we greatly improved our LLM through prompt engineering techniques such as few-shot prompting and chain of thought, where we guide the LLM through example user prompts, expected outputs and the reasons behind them. Prompt engineering can shape responses in certain formats such as json formats, which facilitates data transfer in the backend.
 
 ## How to run the code
 
