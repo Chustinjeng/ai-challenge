@@ -23,7 +23,7 @@ gmaps = googlemaps.Client(key=maps_api_key)
 palm_api_key = "AIzaSyAL1kGbBzgVKoVOZ6fhSL8qN9GKeBNpoA0"
 palm.configure(api_key=palm_api_key)  # set API key
 
-chroma_client = chromadb.PersistentClient(path="../chromadb")
+chroma_client = chromadb.PersistentClient(path="chromadb")
 sentence_transformer_ef = embedding_functions.SentenceTransformerEmbeddingFunction(
     model_name="all-mpnet-base-v2")
 app = Flask(__name__)
